@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# CineFlow Studio: All-in-One Automated Setup Script
+# Usage: ./scripts/setup_studio [--mirror <huggingface|hf-mirror|modelscope>] [--download-models]
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
+
+MIRROR="huggingface"
+DOWNLOAD_MODELS=false
+COMFY_DIR="${COMFY_DIR:-ComfyUI}"
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --mirror) MIRROR="$2"; shift ;;
+        --download-models) DOWNLOAD_MODELS=true ;;
+        --comfy-dir) COMFY_DIR="$2"; shift ;;
+        -h|--help)
+            echo "Usage: $0 [--mirror <huggingface|hf-mirror|modelscope>] [--download-models] [--comfy-dir <dir>]"
+            exit 0
+            ;;
+        *) echo "Unknown parameter: $1"; exit 1 ;;
+    esac
+    shift
+done
+
+echo "🎬 =================================================================="
+echo "🎬 CineFlow Studio: Automated Environment Setup"
+echo "🎬 =================================================================="
+
+# 1. Resolve Python interpreter
+if [ -f "$REPO_ROOT/.venv/bin/python" ]; then
+    PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
+elif [ -f "$REPO_ROOT/venv/bin/python" ]; then
+    PYTHON_BIN="$REPO_ROOT/venv/bin/python"
+elif [ -f "$HOME/.local/share/cineflow/venv/bin/python" ]; then
+    PYTHON_BIN="$HOME/.local/share/cineflow/venv/bin/python"
+else
+    PYTHON_BIN="$(command -v python3 || command -v python)"
+fi
+echo "🐍 Using Python: $PYTHON_BIN ($("$PYTHON_BIN" --version))"
+
+# 2. Install / verify Python package in editable mode
+echo "📦 Installing CineFlow core package..."
+"$PYTHON_BIN" -m pip install -e . --no-warn-script-location -q || true
+
+# 2b. Install the CineFlow skill into IDE skill directories
+echo "🧠 Installing the CineFlow skill (canonical skill/cineflow)..."
+bash "$SCRIPT_DIR/install_skill"
+
+# 3. Detect Hardware Profile
+echo "🖥️  Analyzing hardware and VRAM..."
+"$PYTHON_BIN" -c "
+from cineflow.installer.hardware import inspect_hardware
+hw = inspect_hardware()
+print(f'   Hardware: {hw.platform_name} | CPU: {hw.cpu_cores} cores | RAM: {hw.ram_gb:.1f} GB')
+print(f'   GPU: {hw.gpu_name or \"None (CPU)\"} | VRAM: {hw.vram_gb:.1f} GB')
+print(f'   Recommended Profile: {hw.recommended_profile}')
+"
+
+# 4. Provision ComfyUI runner and model installer scripts
+echo "⚙️  Generating ComfyUI launchers and installer scripts in '$COMFY_DIR'..."
+"$PYTHON_BIN" -c "
+from pathlib import Path
+from cineflow.installer.runner import generate_dependency_install_script, generate_launch_script
+c_dir = Path('$COMFY_DIR')
+s1 = generate_dependency_install_script(c_dir, mirror='$MIRROR')
+s2 = generate_launch_script(c_dir)
+print(f'   Created installer: {s1}')
+print(f'   Created launcher:  {s2}')
+"
+
+# 5. Optional models download
+if [ "$DOWNLOAD_MODELS" = true ]; then
+    echo "📥 Downloading required model weights..."
+    if [ -f "$COMFY_DIR/install_cineflow_models.sh" ]; then
+        (cd "$COMFY_DIR" && bash install_cineflow_models.sh)
+    elif [ -f "$COMFY_DIR/install_cineflow_models.bat" ]; then
+        (cd "$COMFY_DIR" && install_cineflow_models.bat)
+    fi
+else
+    echo "💡 Model weights download script ready at: $COMFY_DIR/install_cineflow_models.sh"
+    echo "   (Run with '--download-models' to fetch automatically or execute manually)"
+fi
+
+# 6. Verify MCP Server communication
+echo "🔌 Verifying CineFlow MCP Server (34 tools)..."
+"$PYTHON_BIN" scripts/test_kimi_mcp.py > /dev/null
+echo "   MCP Server stdio test PASSED! All 34 studio tools verified."
+
+echo ""
+echo "🎉 =================================================================="
+echo "🎉 CineFlow Studio is ready!"
+echo "🎉 "
+echo "🎉 How to start filmmaking:"
+echo "🎉 1. In Cursor / Kimi Code: simply type:"
+echo "🎉    'Привет! У меня есть сценарий, давай сделаем проект и видео.'"
+echo "🎉 2. To launch local ComfyUI: execute '$COMFY_DIR/run_comfy_cineflow.sh'"
+echo "🎉 3. To sync with DaVinci Resolve: call 'cineflow_davinci_sync'"
+echo "🎉 =================================================================="

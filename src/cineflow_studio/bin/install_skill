@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Install the canonical CineFlow skill into the IDE skill directories.
+# The canonical copy lives at skill/cineflow/ (Studio 0c); per-IDE copies are
+# generated artifacts and are gitignored — this script (re)creates them.
+# Usage: ./scripts/install_skill [--repo-root <path>]
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="${2:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+
+if [ "$1" = "--repo-root" ]; then
+    REPO_ROOT="$2"
+elif [ -n "$1" ]; then
+    echo "Unknown argument: $1"
+    echo "Usage: $0 [--repo-root <path>]"
+    exit 1
+fi
+
+CANON="$REPO_ROOT/skill/cineflow"
+if [ ! -f "$CANON/SKILL.md" ]; then
+    echo "ERROR: canonical skill not found at $CANON/SKILL.md" >&2
+    exit 1
+fi
+
+# IDE skill target directories (directory that receives the 'cineflow' skill folder)
+TARGETS=(
+    ".agents/skills"
+    ".claude/skills"
+    ".kimi/skills"
+    ".kimi-code/skills"
+    ".cursor/skills"
+)
+
+for target in "${TARGETS[@]}"; do
+    dest="$REPO_ROOT/$target/cineflow"
+    # Refresh only when the copy is missing or out of date
+    if [ -f "$dest/SKILL.md" ] && diff -rq "$CANON" "$dest" > /dev/null 2>&1; then
+        echo "  up-to-date: $target/cineflow"
+        continue
+    fi
+    mkdir -p "$REPO_ROOT/$target"
+    rm -rf "$dest"
+    cp -r "$CANON" "$dest"
+    echo "  installed:  $target/cineflow"
+done
+
+echo "Skill installed from $CANON"
