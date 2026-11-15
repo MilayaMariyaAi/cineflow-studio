@@ -5,6 +5,29 @@ ComfyUI, and DaVinci Resolve. Turn screenplays and book stories into
 cinematic AI videos: character turnaround sheets, scene graphs, closed-mouth
 lip-sync guards, and 1-click round-trip editing in DaVinci Resolve.
 
+## Why Studio, not just an agent
+
+Your IDE agent can already call image/video APIs — that is not what you pay
+for here. A raw agent flow loses the project when the session ends,
+re-derives the craft rules at your expense (unaddressed references → lost
+character identity → re-shoots; Cyrillic in prompts; open mouths on
+lip-synced reaction shots), and regenerates everything after one line
+changes. CineFlow Studio keeps:
+
+- **a persistent project** — characters, locations, plan, shots survive
+  sessions, IDEs and agents;
+- **production invariants as code** — the boring lessons that each cost a
+  real production incident, enforced on every generation;
+- **partial rebuilds** — change one line, only the affected scenes are
+  re-asked (replayed model answers are free);
+- **one visual surface** — you review cards, storyboards and shots while the
+  agent works on the same state.
+
+Community mode is free and local. The subscription buys the cloud director
+core — the plan, continuity and reference policy — not access to generation.
+
+---
+
 ## Install (no GitHub needed)
 
 ```bash
@@ -51,12 +74,6 @@ Follow the bundled skill: `cineflow_studio/skill/cineflow/SKILL.md`
 invariants: English-only diffusion prompts, explicit `<Subject N>` reference
 naming, `render_name` aliases instead of real character names, closed-mouth
 guard for silent shots.
-
-## Install from this repository (no PyPI needed)
-
-```bash
-uvx --from git+https://github.com/MariyaLoginova/cineflow-studio cineflow-mcp
-```
 
 ## License
 
