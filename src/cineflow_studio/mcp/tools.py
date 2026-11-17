@@ -363,9 +363,9 @@ async def handle_status(args: dict[str, Any]) -> dict[str, Any]:
 
 
 async def handle_billing_status(args: dict[str, Any]) -> dict[str, Any]:
-    """Community status locally; with a key, the tier and entitlements come from the CineFlow
+    """Community status locally; with a key, billing state comes from the CineFlow
     server (GET /me, Studio 3b). The client never decides a tier itself."""
-    from cineflow_studio.mcp.billing import resolve_billing_status
+    from cineflow_studio.mcp.billing import PACKAGE_API_CONTRACT, resolve_billing_status
 
     status = resolve_billing_status()
     if not status["api_key_configured"]:
@@ -374,14 +374,67 @@ async def handle_billing_status(args: dict[str, Any]) -> dict[str, Any]:
 
     try:
         me = await cloud.get_me()
-        status["tier"] = (me.get("user") or {}).get("role")
+        me_user = me.get("user") or {}
+        me_billing = me.get("billing") or {}
+        me_server = me.get("server") or {}
+        status["tier"] = me_user.get("role")
+        status["billing"] = {
+            "generation_enabled": me_billing.get("generation_enabled"),
+            "gpu_unlimited": me_billing.get("gpu_unlimited"),
+            "credit_cap": me_billing.get("credit_cap"),
+        }
+        status["subscription"] = me.get("subscription")
+        status["payment_url"] = me.get("payment_url")
+        status["server"] = {
+            "api_rev": me_server.get("api_rev"),
+            "api_contract": me_server.get("api_contract"),
+        }
+        server_contract = me_server.get("api_contract")
+        if server_contract is None:
+            status["compat"] = {
+                "package_api_contract": PACKAGE_API_CONTRACT,
+                "server_api_contract": None,
+                "ok": False,
+                "note": (
+                    "The CineFlow server predates the billing contract "
+                    f"(no api_contract field; the package expects {PACKAGE_API_CONTRACT}). "
+                    "Update the CineFlow backend."
+                ),
+            }
+        else:
+            status["compat"] = {
+                "package_api_contract": PACKAGE_API_CONTRACT,
+                "server_api_contract": server_contract,
+                "ok": int(server_contract) >= PACKAGE_API_CONTRACT,
+                "note": (
+                    None
+                    if int(server_contract) >= PACKAGE_API_CONTRACT
+                    else "The CineFlow server speaks an older contract than this package; update the backend."
+                ),
+            }
+        status["refusal"] = None
+        if status["billing"]["generation_enabled"] is False:
+            # Server-decided lock (promo-less self-signup): the agent should
+            # tell the user honestly and point at the payment URL.
+            status["refusal"] = {
+                "code": "GENERATION_LOCKED",
+                "message": (
+                    "Generation is locked for this account on the CineFlow server "
+                    "(no promo code or subscription yet). Ask the user to subscribe "
+                    "or apply a promo code, then retry."
+                ),
+                "payment_url": me.get("payment_url") or status["billing_portal"],
+            }
+            status["tier_name"] = "CineFlow (view-only, generation locked)"
+        else:
+            status["tier_name"] = f"CineFlow ({status['tier']}) verified by the server"
         status["cloud"] = {
             **status["cloud"],
-            "tier": (me.get("user") or {}).get("role"),
+            "tier": me_user.get("role"),
             "entitlements": me.get("entitlements", []),
             "verified": True,
         }
-        status["message"] = "Tier and entitlements verified by the CineFlow server."
+        status["message"] = "Billing state verified by the CineFlow server."
     except cloud.CloudError as exc:
         if isinstance(exc, cloud.CloudUnavailable):
             status["cloud"] = {**status["cloud"], "verified": False, "cloud_unreachable": str(exc)}
@@ -401,6 +454,31 @@ async def handle_auth(args: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Field 'api_key' is required. Pass the CineFlow API key issued by the CineFlow server.")
     from cineflow_studio.mcp.billing import authenticate_client
     return authenticate_client(api_key)
+
+
+async def handle_plan_stages(args: dict[str, Any]) -> dict[str, Any]:
+    project_id = args.get("project_id", "").strip()
+    if not project_id:
+        raise ValueError("Field 'project_id' is required")
+    from cineflow_studio.mcp import cloud
+    return await cloud.plan_stages(project_id)
+
+
+async def handle_plan_state(args: dict[str, Any]) -> dict[str, Any]:
+    project_id = args.get("project_id", "").strip()
+    if not project_id:
+        raise ValueError("Field 'project_id' is required")
+    from cineflow_studio.mcp import cloud
+    return await cloud.plan_state(project_id)
+
+
+async def handle_scenes_propose(args: dict[str, Any]) -> dict[str, Any]:
+    project_id = args.get("project_id", "").strip()
+    scenes = args.get("scenes")
+    if not project_id or not scenes:
+        raise ValueError("Fields 'project_id' and 'scenes' are required")
+    from cineflow_studio.mcp import cloud
+    return await cloud.propose_scenes(project_id, {"scenes": scenes, "source_note": args.get("source_note")})
 
 
 async def handle_davinci_sync(args: dict[str, Any]) -> dict[str, Any]:
@@ -625,9 +703,22 @@ async def handle_scene_directing_set(args: dict[str, Any]) -> dict[str, Any]:
 
 
 async def handle_comfy_config_get(args: dict[str, Any]) -> dict[str, Any]:
+    # #744: project_id is optional — at first run there are no projects yet,
+    # and the agent still needs the Comfy setup (paths/URL) to provision the
+    # machine before any project exists.
     project_id = args.get("project_id", "").strip()
     if not project_id:
-        raise ValueError("Field 'project_id' is required")
+        from pathlib import Path as _Path
+
+        import os as _os
+
+        return {
+            "comfy_dir": str(_Path("ComfyUI").resolve()),
+            "comfy_url": _os.getenv("COMFYUI_URL", "http://127.0.0.1:8188"),
+            "models_dir": str(_Path("ComfyUI") / "models"),
+            "custom_nodes_dir": str(_Path("ComfyUI") / "custom_nodes"),
+            "scope": "global (no project yet): defaults from cineflow-setup",
+        }
     from cineflow_studio.mcp.project_store import get_project_comfy_config
     return get_project_comfy_config(project_id)
 
@@ -761,12 +852,12 @@ async def handle_generate_dependency_script(args: dict[str, Any]) -> dict[str, A
 
 async def handle_check_updates(_args: dict[str, Any]) -> dict[str, Any]:
     from cineflow_studio.mcp.updates import check_cineflow_updates
-    return check_cineflow_updates()
+    return await check_cineflow_updates()
 
 
 async def handle_apply_update(_args: dict[str, Any]) -> dict[str, Any]:
     from cineflow_studio.mcp.updates import apply_cineflow_updates
-    return apply_cineflow_updates()
+    return await apply_cineflow_updates()
 
 
 async def handle_deepseek_status(args: dict[str, Any]) -> dict[str, Any]:
@@ -806,14 +897,65 @@ async def handle_comfy_workflow_execute(args: dict[str, Any]) -> dict[str, Any]:
     overrides = args.get("params")
     comfy_url = args.get("comfy_url")
 
-    from cineflow_studio.mcp.comfy_builder import assemble_comfy_workflow, queue_comfy_workflow
+    from cineflow_studio.mcp.comfy_builder import assemble_comfy_workflow, queue_comfy_workflow, upload_ref_files
 
-    graph, _warnings = assemble_comfy_workflow(
-        workflow_id=workflow_id,
-        custom_graph=custom_graph,
-        overrides=overrides,
-    )
-    return await queue_comfy_workflow(
+    # Studio 6f: cloud-first assembly. The production dialect knowledge lives
+    # on the server; the client sends a describe request and queues the
+    # returned graph locally. Without a configured server (community mode) or
+    # when the server refuses/fails, the verified local blueprint path runs —
+    # said honestly in the answer, never silently mixed.
+    graph: dict | None = None
+    assembly = "community"
+    assembly_note = ""
+    server_key = (args.get("server_workflow_key") or "").strip()
+    if server_key:
+        from cineflow_studio.mcp import cloud
+
+        if not cloud.cloud_configured():
+            assembly_note = "No CineFlow API token configured; assembled the community blueprint locally."
+        else:
+            try:
+                uploaded = await upload_ref_files(comfy_url, list(args.get("ref_files") or []))
+                assembled = await cloud.assemble_comfy_graph(
+                    project_id,
+                    {
+                        "workflow_key": server_key,
+                        "prompt": str((overrides or {}).get("prompt") or args.get("prompt") or ""),
+                        "negative_prompt": args.get("negative_prompt"),
+                        "ref_filenames": uploaded,
+                        "width": (overrides or {}).get("width"),
+                        "height": (overrides or {}).get("height"),
+                        "seed": (overrides or {}).get("seed"),
+                    },
+                )
+                if not assembled.get("graph"):
+                    raise cloud.CloudError("the server answered an empty graph")
+                graph = assembled["graph"]
+                assembly = "server"
+                assembly_note = f"Assembled server-side ({server_key}); ref ceiling {assembled.get('ref_slots_max')}."
+            except (cloud.CloudError, ValueError, OSError) as exc:
+                # httpx errors under it are upload/queue network failures — same fallback.
+                assembly_note = f"Server assembly unavailable ({exc}); fell back to the community blueprint."
+
+    if graph is None:
+        if server_key and not custom_graph and not workflow_id:
+            # An explicitly requested server dialect cannot degrade into a
+            # random local blueprint: say what is missing.
+            return {
+                "status": "failed",
+                "assembly": assembly,
+                "assembly_note": (
+                    "Server assembly was requested (server_workflow_key="
+                    f"{server_key}) but it is unavailable, and no community "
+                    "blueprint or custom graph was provided as a fallback."
+                ),
+            }
+        graph, _warnings = assemble_comfy_workflow(
+            workflow_id=workflow_id,
+            custom_graph=custom_graph,
+            overrides=overrides,
+        )
+    result = await queue_comfy_workflow(
         project_id=project_id,
         scene_id=scene_id,
         shot_id=shot_id,
@@ -821,6 +963,10 @@ async def handle_comfy_workflow_execute(args: dict[str, Any]) -> dict[str, Any]:
         comfy_url=comfy_url,
         metadata=overrides,
     )
+    result["assembly"] = assembly
+    if assembly_note:
+        result["assembly_note"] = assembly_note
+    return result
 
 
 # -------------------------------------------------------------------------
@@ -1096,6 +1242,46 @@ TOOLS: dict[str, tuple[ToolDefinition, Callable[[dict[str, Any]], Any]]] = {
             },
         ),
         handle_auth,
+    ),
+    "cineflow_plan_stages": (
+        ToolDefinition(
+            name="cineflow_plan_stages",
+            description="☁ The REAL CineFlow stage system prompts (reading, decoupage, carry-over) and numeric rules (frame ceiling, ref slots). Follow them exactly — they are what the server's own director stages follow.",
+            input_schema={
+                "type": "object",
+                "properties": {"project_id": {"type": "string", "description": "Project ID."}},
+                "required": ["project_id"],
+            },
+        ),
+        handle_plan_stages,
+    ),
+    "cineflow_plan_state": (
+        ToolDefinition(
+            name="cineflow_plan_state",
+            description="☁ The canonical project state from the CineFlow DB: script lines, characters (source AND render names — one person, two names), plan-cache summary. Read before every propose; never keep your own copy.",
+            input_schema={
+                "type": "object",
+                "properties": {"project_id": {"type": "string", "description": "Project ID."}},
+                "required": ["project_id"],
+            },
+        ),
+        handle_plan_state,
+    ),
+    "cineflow_scenes_propose": (
+        ToolDefinition(
+            name="cineflow_scenes_propose",
+            description="☁ Propose your scene draft as data (title, place/time, cast by name, shots with ≤2 actions, a prompt per shot). Per-scene machine codes come back for repairs — fix your draft and retry.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "project_id": {"type": "string", "description": "Project ID."},
+                    "scenes": {"type": "array", "items": {"type": "object"}, "description": "Scene drafts (id, title, cast, shots)."},
+                    "source_note": {"type": "string", "description": "Optional note about the source (book/screenplay)."},
+                },
+                "required": ["project_id", "scenes"],
+            },
+        ),
+        handle_scenes_propose,
     ),
     "cineflow_davinci_sync": (
         ToolDefinition(
@@ -1492,7 +1678,7 @@ TOOLS: dict[str, tuple[ToolDefinition, Callable[[dict[str, Any]], Any]]] = {
     "cineflow_check_updates": (
         ToolDefinition(
             name="cineflow_check_updates",
-            description="Check parent CineFlow repository for newly released features, models, workflow blueprints, or studio updates.",
+            description="Check for CineFlow Studio updates: a PyPI release (installed package) or the monorepo git remote (development checkout). Answers JSON; never upgrades by itself.",
             input_schema={
                 "type": "object",
                 "properties": {},
@@ -1503,7 +1689,7 @@ TOOLS: dict[str, tuple[ToolDefinition, Callable[[dict[str, Any]], Any]]] = {
     "cineflow_apply_update": (
         ToolDefinition(
             name="cineflow_apply_update",
-            description="Safely pull upstream parent repository updates, refresh skills in .kimi-code and .agents, and update DaVinci Resolve scripts.",
+            description="Apply updates: in a development checkout pulls the monorepo and re-syncs skills/DaVinci scripts; in an installed PyPI package returns the exact user upgrade command instead of mutating the environment.",
             input_schema={
                 "type": "object",
                 "properties": {},
@@ -1568,7 +1754,7 @@ TOOLS: dict[str, tuple[ToolDefinition, Callable[[dict[str, Any]], Any]]] = {
     "cineflow_comfy_workflow_execute": (
         ToolDefinition(
             name="cineflow_comfy_workflow_execute",
-            description="Assemble, parameterize, save, and queue a ComfyUI workflow graph (LTX, FLUX, Qwen Vision CV, or Higgs TTS). Saves reproducible .comfy.json and sidecar .cineflow.json alongside shot media.",
+            description="Build and queue a ComfyUI graph: ☁ with a configured token and server_workflow_key the CineFlow server assembles the production dialect graph (ref policy enforced server-side); 🔧 otherwise a verified community blueprint from the catalog. Saves reproducible .comfy.json and sidecar .cineflow.json alongside shot media.",
             input_schema={
                 "type": "object",
                 "properties": {
@@ -1591,6 +1777,17 @@ TOOLS: dict[str, tuple[ToolDefinition, Callable[[dict[str, Any]], Any]]] = {
                         "type": "string",
                         "description": "Optional custom ComfyUI base URL (default: http://127.0.0.1:8188).",
                     },
+                    "server_workflow_key": {
+                        "type": "string",
+                        "description": "Production dialect key for server-side assembly (e.g. 'qwen_image21_edit'). Requires a configured CineFlow token; the server builds the runnable graph and enforces the dialect ref policy — the client never assembles production dialects locally.",
+                    },
+                    "ref_files": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Local paths of reference images; uploaded to the local ComfyUI first, their server-visible filenames go into the assembled graph.",
+                    },
+                    "prompt": {"type": "string", "description": "Prompt for server-side assembly (used when server_workflow_key is set)."},
+                    "negative_prompt": {"type": "string", "description": "Negative prompt for server-side assembly."},
                 },
                 "required": ["project_id", "scene_id", "shot_id"],
             },

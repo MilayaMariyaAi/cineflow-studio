@@ -154,3 +154,31 @@ async def queue_comfy_workflow(
             f"under prompt ID '{prompt_id}'. Saved '{clean_shot}.comfy.json' and '{clean_shot}.cineflow.json'."
         ),
     }
+
+
+async def upload_ref_files(comfy_url: str | None, ref_paths: list[str]) -> list[str]:
+    """Upload reference images to the LOCAL ComfyUI and return server-visible
+    filenames (the hands, free tier). A failed upload raises — the caller
+    falls back to the community blueprint path instead of a broken graph."""
+    import httpx
+    from pathlib import Path as _Path
+
+    base = (comfy_url or os.getenv("COMFYUI_URL", "http://127.0.0.1:8188")).rstrip("/")
+    uploaded: list[str] = []
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for raw in ref_paths:
+            path = _Path(raw).expanduser()
+            if not path.is_file():
+                raise ValueError(f"reference file not found: {path}")
+            with path.open("rb") as fh:
+                resp = await client.post(
+                    f"{base}/upload/image",
+                    files={"image": (path.name, fh, "application/octet-stream")},
+                    data={"overwrite": "true"},
+                )
+            resp.raise_for_status()
+            data = resp.json()
+            name = data.get("name") or path.name
+            sub = data.get("subfolder") or ""
+            uploaded.append(f"{sub}/{name}" if sub else name)
+    return uploaded

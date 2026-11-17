@@ -1,0 +1,37 @@
+name: verify-dist
+
+# Distribution drift guard (Studio sync infra): the tree in this repo is a
+# DERIVED artifact of scripts/sync_studio_package.py (monorepo) and must
+# still match its own DIST_MANIFEST.json (sha256 per file + DIST_SOURCE_SHA
+# provenance). A hand edit or a stale tree fails loudly here.
+#
+# The stdlib verifier ships inside every sync (scripts/verify_dist.py).
+# Until the first sync lands in this repo, the check self-skips — do not
+# keep that escape hatch after the first sync PR.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify the tree against its DIST_MANIFEST.json
+        run: |
+          if [ -f scripts/verify_dist.py ]; then
+            python scripts/verify_dist.py --root .
+          else
+            echo "::warning::scripts/verify_dist.py not in the tree yet — the first sync PR will ship it. Self-skipping once."
+          fi

@@ -14,6 +14,11 @@ ENV_API_KEY = "CINEFLOW_API_KEY"
 ENV_CLOUD_URL = "CINEFLOW_CLOUD_URL"
 DEFAULT_BILLING_PORTAL = "https://cineflow.ai/pricing"
 
+# The /me contract this package speaks (server.api_contract, Studio 2d). A
+# server without billing/subscription/server fields predates it; the client
+# warns and asks for a backend update instead of guessing at a tier.
+PACKAGE_API_CONTRACT = 2
+
 # In-memory session key if set via cineflow_auth during agent chat
 _runtime_api_key: str | None = None
 
@@ -44,6 +49,23 @@ def resolve_billing_status() -> dict[str, Any]:
         "architecture": "100% Local (client + local ComfyUI)",
         "render_backend": "Local ComfyUI (127.0.0.1:8188)",
         "credits": "Unlimited Local",
+        "billing": {
+            # Mirrored from GET /me when the key verifies; None here means
+            # "unknown offline", not "unlimited".
+            "generation_enabled": None,
+            "gpu_unlimited": None,
+            "credit_cap": None,
+        },
+        "refusal": None,
+        "subscription": None,
+        "payment_url": None,
+        "server": {"api_rev": None, "api_contract": None},
+        "compat": {
+            "package_api_contract": PACKAGE_API_CONTRACT,
+            "server_api_contract": None,
+            "ok": None,
+            "note": None,
+        },
         "cloud": {
             "configured": has_key,
             "url": os.getenv(ENV_CLOUD_URL) or None,

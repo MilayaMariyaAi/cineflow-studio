@@ -94,17 +94,43 @@ The **CineFlow MCP Server** (`cineflow/mcp/`) operates as your **Execution Engin
 
 Check once per session how the studio is running:
 
-- **Cloud mode** — a CineFlow API key is configured (`CINEFLOW_API_KEY` or stored via `cineflow_auth`).
-  The CineFlow **server** is the source of truth for projects, scripts, and plans:
-  `cineflow_project_init` creates the project on the server (the local workspace keeps only a
-  `mirror.json`), `cineflow_projects_list` also lists the server's projects, and
-  `cineflow_cloud_script_plan` uploads the script, starts the plan job, and waits for it.
-  `cineflow_billing_status` shows the tier and entitlements **verified by the server**.
+- **Cloud mode ☁** — a personal API token is configured (`CINEFLOW_API_KEY` or stored via
+  `cineflow_auth`). The CineFlow **server** is the source of truth for projects, scripts, and plans:
+  ☁ `cineflow_project_init` creates the project on the server (the local workspace keeps only a
+  `mirror.json`), ☁ `cineflow_projects_list` also lists the server's projects,
+  ☁ `cineflow_assets_transfer` moves cast and materials between projects, and
+  ☁ `cineflow_cloud_script_plan` uploads the script, starts the plan job, and waits for it.
+  `cineflow_billing_status` shows the billing state **verified by the server** (plan,
+  entitlements, subscription, refusal code with a payment URL when generation is locked).
 - **Community mode (free)** — no key: everything is local (project store under
   `storage/projects/`, local ComfyUI rendering). The same tools work against the local store.
 
 The client never decides a tier by itself: if `cineflow_billing_status` says
 `cloud.verified: false`, ask the user to check the key before relying on cloud tools.
+
+### Billing refusals: what the agent does (Studio 6e, #730)
+
+Cloud tools run only while the **server** allows the account (D2: the client never
+unlocks anything locally). When `cineflow_billing_status` returns a `refusal`, tell
+the user honestly and stop — do not retry and do not look for workarounds:
+
+- `GENERATION_LOCKED` — no promo code or subscription yet. Say it plainly and give
+  `refusal.payment_url` (the portal), then wait for the user.
+- `SUBSCRIPTION_EXPIRED` — the plan period ran out (`/me.subscription.status` is
+  `"expired"`). Ask the user to renew on the portal; do not announce free credits.
+- `CREDITS_EXHAUSTED` — the period wallet is spent (later billing stages); wait for
+  the next period or a top-up.
+
+RU phrasing for the user:
+
+> «Облачные инструменты CineFlow работают по подписке. Сейчас она не активна
+> (код: `<code>`). Оформить или продлить: `<payment_url>`. После оплаты скажи —
+> я проверю статус и продолжим.»
+
+When `compat.ok` is `false`, the server is older than this package: ask the user to
+update the CineFlow backend before blaming the key. Tokens are personal
+(`cfp_…`, minted via `POST /me/tokens` on the portal with a logged-in session) —
+never share one between users or hardcode it into a repository.
 
 ---
 
@@ -173,8 +199,9 @@ The client never decides a tier by itself: if `cineflow_billing_status` says
 
 ### F. Inspection & Billing
 - `cineflow_status`: Inspects active project progress, render queues, and GPU availability.
-- `cineflow_billing_status`: Inspects current tier (Local Community Free vs Cloud FastPass), remaining GPU credits, and upgrade link.
-- `cineflow_auth`: Authenticates user with a CineFlow Cloud API key (`cf_live_...`) to enable managed cloud rendering.
+- `cineflow_billing_status` 🔧: The account's billing state **verified by the server** (GET /me): plan and entitlements, wallet, subscription status with days left, a refusal code (`GENERATION_LOCKED` / `SUBSCRIPTION_EXPIRED` / `CREDITS_EXHAUSTED`) with `payment_url` when generation is locked, and the contract-compatibility check (`compat`). The client never decides a tier itself.
+- `cineflow_check_updates` 🔧 / `cineflow_apply_update` 🔧: Release check — PyPI for the installed package, the git remote for a development checkout. The package never upgrades itself: it returns the exact user command (`uv tool upgrade cineflow-studio && cineflow-setup`).
+- `cineflow_auth` 🔧: Saves the personal API token (`cfp_…`, minted on the CineFlow portal with a logged-in session). Verification happens **server-side on every cloud call**; the client only stores the string.
 
 ### G. Hardware Profiling, Model Provisioning & Workflow Blueprints
 - `cineflow_hardware_profile`: Inspects local CPU, RAM, GPU, VRAM and determines the optimal memory profile (`rtx_24gb`, `rtx_16gb`, `rtx_12gb`, `apple_silicon`, `cloud_only`).
@@ -300,6 +327,44 @@ When the user asks to reuse, copy, or import assets from another film, episode, 
      > *«Из проекта 'Убийство в восточном экспрессе' успешно перенесены 2 персонажа: Мартин (с карточками стиля и голосом Higgs) и Графиня, а также локация Особняк. Все референсные файлы скопированы в materials/ текущего проекта. Хотите адаптировать их костюмы под новую эпоху или сразу перейдем к раскадровке Сцены 1?»*
 
 ---
+
+## 7a. Book → Scenes (Agent-as-LLM, #747)
+
+The agent's OWN LLM does all the writing; CineFlow keeps the state, validates
+and shows the frontend. The tokens are yours (the user's IDE subscription),
+the discipline is CineFlow's.
+
+Flow (one book/screenplay in the chat):
+
+1. **Project first.** `cineflow_project_init` (cloud, with the token) — the
+   project lives on the server; the DB is the single source of truth. Never
+   keep your own copy of scenes: re-read state instead.
+2. **Chain the instructions.** `cineflow_plan_stages` returns the REAL stage
+   system prompts (reading, decoupage, carry-over) and the numeric rules
+   (frame ceiling 4, ≤2 actions per shot, ref slots per dialect). Follow them
+   exactly — they are what CineFlow's own director stages follow.
+3. **Chain the state.** `cineflow_plan_state` — script lines, characters
+   (source name AND render_name: one person, two names — never cast them as
+   two), plan-cache summary. Read this before every propose.
+4. **Read the book yourself** (your LLM): heroes, places, key moments — the
+   book's own wording is the truth; do not invent events.
+5. **Propose scenes as data** via `cineflow_scenes_propose`: compact JSON
+   scenes (title, place/time, cast by name, shots with ≤2 actions each, a
+   prompt per shot). The server answers per-scene verdicts with machine codes
+   (`SCENE_CAST_OVERFLOW`, `UNKNOWN_CHARACTER`, `REF_SLOTS_OVERFLOW`,
+   `TOO_MANY_ACTIONS`); fix YOUR draft by the codes and retry — do not ask
+   the user to fix validation.
+6. **Show scenes in the chat**, not as a wall of text: a numbered compact
+   list — number, title, one line of what happens, cast. Ask the user to
+   pick, comment or edit (RU, e.g. «Какие сцены снимаем? Могу изменить любую»).
+7. **Apply the user's edits** by re-proposing the changed scenes only
+   (the plan-edit discipline: change what was asked, keep the rest).
+8. **Point at the frontend:** «Проект здесь: <Lab URL>» — the same scenes and
+   later renders are visible in the browser.
+
+RU phrasing for step 5 retries: «Черновик не прошёл проверку (коды: …) —
+исправляю и отправляю снова» (say it once, quietly fix, don't dump codes on
+the user unless asked).
 
 ## 8. Deployment Topologies: 1 Server (External LLM) vs 2 Servers (Internal Cluster)
 

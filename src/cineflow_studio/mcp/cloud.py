@@ -104,6 +104,29 @@ async def get_me() -> dict[str, Any]:
     return await request("GET", "/me")
 
 
+async def plan_stages(project_id: str) -> dict[str, Any]:
+    """The REAL stage system prompts + numeric rules (the server's own constants)."""
+    return await request("GET", f"/projects/{project_id}/plan/stages")
+
+
+async def plan_state(project_id: str) -> dict[str, Any]:
+    """The canonical state: script lines, characters (both names), plan summary."""
+    return await request("GET", f"/projects/{project_id}/plan/state")
+
+
+async def propose_scenes(project_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    """The agent's scene draft as data; per-scene machine codes for repairs."""
+    return await request("POST", f"/projects/{project_id}/scenes/propose", body)
+
+
+async def assemble_comfy_graph(project_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    """The server builds the production dialect's runnable graph (Studio 6f).
+
+    The dialect knowledge never ships in the package: describe what to build,
+    receive the artifact, queue it to the local ComfyUI."""
+    return await request("POST", f"/projects/{project_id}/comfy/assemble", body)
+
+
 async def create_project(body: dict[str, Any]) -> dict[str, Any]:
     return await request("POST", "/projects", body, idempotent=True)
 

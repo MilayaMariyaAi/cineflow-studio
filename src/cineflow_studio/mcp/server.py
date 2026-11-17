@@ -34,10 +34,21 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 
+def _package_version() -> str:
+    """The installed cineflow-studio distribution's version (#744), not a literal:
+    initialize must tell the truth about what the user runs."""
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        return version("cineflow-studio")
+    except PackageNotFoundError:
+        return "0.0.0+dev"  # a development checkout without the dist installed
+
+
 class McpServer:
-    def __init__(self, name: str = "cineflow-mcp", version: str = "1.0.0") -> None:
+    def __init__(self, name: str = "cineflow-mcp", version: str | None = None) -> None:
         self.name = name
-        self.version = version
+        self.version = version or _package_version()
         self.initialized = False
 
     async def handle_message(self, line: str) -> str | None:
@@ -149,13 +160,14 @@ class McpServer:
 
     async def run_stdio(self) -> None:
         logger.info("Starting CineFlow MCP Server (%s v%s) over stdio...", self.name, self.version)
+        # Blocking readline in a worker thread instead of loop.connect_read_pipe:
+        # on Windows (Proactor) a pipe transport cannot wrap the console/piped
+        # stdin handle at all (OSError WinError 6) and the server never answers
+        # its first request — the standard portable pattern for stdio servers.
         loop = asyncio.get_running_loop()
-        reader = asyncio.StreamReader()
-        protocol = asyncio.StreamReaderProtocol(reader)
-        await loop.connect_read_pipe(lambda: protocol, sys.stdin)
 
         while True:
-            line_bytes = await reader.readline()
+            line_bytes = await loop.run_in_executor(None, sys.stdin.buffer.readline)
             if not line_bytes:
                 logger.info("EOF received on stdin, shutting down CineFlow MCP server.")
                 break
