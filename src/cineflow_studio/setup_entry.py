@@ -85,6 +85,11 @@ def comfy_hint() -> str:
 
 
 def main() -> int:
+    # Emoji output crashes a cp1252 Windows console (and `python -I` ignores
+    # PYTHONIOENCODING) — reconfigure before the first print (#752).
+    if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     repo_root = Path.cwd()
     print("🎬 CineFlow Studio setup")
     print(f"   Workspace: {repo_root}")

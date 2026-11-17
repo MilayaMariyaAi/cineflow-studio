@@ -71,14 +71,26 @@ async def request(
     json: dict[str, Any] | None = None,
     *,
     idempotent: bool = False,
+    files: dict[str, Any] | None = None,
+    data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """One cloud call; returns the parsed JSON body (dict). Raises CloudError."""
+    """One cloud call; returns the parsed JSON body (dict). Raises CloudError.
+
+    ``files``/``data`` switch the call to multipart — the upload endpoints
+    (/scripts, /characters) take real files, not JSON bodies (#752)."""
     url = f"{_base_url()}{path}"
     last_error: Exception | None = None
     for attempt in (1, 2):  # one retry on network errors / 5xx
         try:
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SEC) as client:
-                response = await client.request(method, url, json=json, headers=_headers(idempotent))
+                response = await client.request(
+                    method,
+                    url,
+                    json=json if files is None else None,
+                    files=files,
+                    data=data,
+                    headers=_headers(idempotent),
+                )
         except httpx.HTTPError as exc:
             last_error = exc
             continue
@@ -137,8 +149,37 @@ async def list_projects() -> list[dict[str, Any]]:
 
 
 async def upload_script(project_id: str, text: str) -> dict[str, Any]:
+    """POST /projects/{id}/scripts takes a multipart ``file`` (script/router.py
+    UploadFile) — not a JSON body (#752 audit)."""
     return await request(
-        "POST", f"/projects/{project_id}/script", {"mode": "manual", "text": text}, idempotent=True
+        "POST",
+        f"/projects/{project_id}/scripts",
+        files={"file": ("script.txt", text.encode("utf-8"), "text/plain")},
+        idempotent=True,
+    )
+
+
+async def create_character(
+    project_id: str, name: str, sheet_path: str
+) -> dict[str, Any]:
+    """POST /projects/{id}/characters — multipart ``name`` + a real ``sheet``
+    image (the upload triggers the identity vision pass, so the sheet is
+    required by the pipeline; the API answers 422 without it, #752)."""
+    from pathlib import Path as _Path
+
+    path = _Path(sheet_path).expanduser()
+    if not path.is_file():
+        raise CloudError(
+            f"character sheet file not found: {path}. A character needs a sheet "
+            "image — the upload runs the identity vision pass server-side."
+        )
+    mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
+    return await request(
+        "POST",
+        f"/projects/{project_id}/characters",
+        files={"sheet": (path.name, path.read_bytes(), mime)},
+        data={"name": name},
+        idempotent=True,
     )
 
 

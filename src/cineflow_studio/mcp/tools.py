@@ -860,6 +860,19 @@ async def handle_apply_update(_args: dict[str, Any]) -> dict[str, Any]:
     return await apply_cineflow_updates()
 
 
+async def handle_character_create(args: dict[str, Any]) -> dict[str, Any]:
+    project_id = args.get("project_id", "").strip()
+    name = args.get("name", "").strip()
+    sheet_path = args.get("sheet_path", "").strip()
+    if not project_id or not name or not sheet_path:
+        raise ValueError(
+            "Fields 'project_id', 'name', and 'sheet_path' are required — a character "
+            "needs a real sheet image: the upload runs the identity vision pass server-side."
+        )
+    from cineflow_studio.mcp import cloud
+    return await cloud.create_character(project_id, name, sheet_path)
+
+
 async def handle_deepseek_status(args: dict[str, Any]) -> dict[str, Any]:
     base_url = args.get("base_url")
     from cineflow_studio.mcp.deepseek import probe_deepseek_endpoint
@@ -1024,7 +1037,7 @@ TOOLS: dict[str, tuple[ToolDefinition, Callable[[dict[str, Any]], Any]]] = {
     "cineflow_project_create": (
         ToolDefinition(
             name="cineflow_project_create",
-            description="Initialize a new cinematic project in the studio database and storage directory.",
+            description="🔧 LOCAL ONLY: create a project in the local store (storage/projects/, offline community mode). The returned p_… id works ONLY with local tools — for cloud tools use cineflow_project_init and its SERVER id.",
             input_schema={
                 "type": "object",
                 "properties": {
@@ -1235,7 +1248,7 @@ TOOLS: dict[str, tuple[ToolDefinition, Callable[[dict[str, Any]], Any]]] = {
                 "properties": {
                     "api_key": {
                         "type": "string",
-                        "description": "CineFlow API key starting with 'cf_live_', 'cf_test_' or 'cf_pro_'.",
+                        "description": "Personal CineFlow token (cfp_...) minted on the CineFlow portal (POST /me/tokens) or the /account/tokens page.",
                     },
                 },
                 "required": ["api_key"],
@@ -1283,6 +1296,22 @@ TOOLS: dict[str, tuple[ToolDefinition, Callable[[dict[str, Any]], Any]]] = {
         ),
         handle_scenes_propose,
     ),
+    "cineflow_character_create": (
+        ToolDefinition(
+            name="cineflow_character_create",
+            description="☁ Create a character on the CineFlow server: multipart name + a real sheet image (local path) — the sheet is required, the upload runs the identity vision pass. Use cineflow_plan_state to see existing characters first; never cast one person as two names.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "project_id": {"type": "string", "description": "SERVER project ID (from cineflow_project_init)."},
+                    "name": {"type": "string", "description": "Character name (source name)."},
+                    "sheet_path": {"type": "string", "description": "Local path to the sheet image (png/jpg)."},
+                },
+                "required": ["project_id", "name", "sheet_path"],
+            },
+        ),
+        handle_character_create,
+    ),
     "cineflow_davinci_sync": (
         ToolDefinition(
             name="cineflow_davinci_sync",
@@ -1302,7 +1331,7 @@ TOOLS: dict[str, tuple[ToolDefinition, Callable[[dict[str, Any]], Any]]] = {
     "cineflow_project_init": (
         ToolDefinition(
             name="cineflow_project_init",
-            description="Initialize a physical project directory tree on disk. Stores original screenplay/book in source/, creates project.json as canonical Source of Truth, and provisions materials/ and scenes/ subdirectories.",
+            description="☁/🔧 THE project opener: creates the workspace (source/, materials/, scenes/) and — with a CineFlow token — the SERVER project (the returned id is the SERVER project_id every cloud tool takes; the local tree keeps only a mirror.json). Without a token this is the local store.",
             input_schema={
                 "type": "object",
                 "properties": {

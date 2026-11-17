@@ -44,20 +44,20 @@ core — the plan, continuity and reference policy — not access to generation.
 
 ---
 
-## Install (no GitHub needed)
+## Install
 
 ```bash
-# Run the MCP server straight from PyPI
-uvx cineflow-studio
+# Run the MCP server straight from this repo (PyPI release comes later)
+uvx --from git+https://github.com/MilayaMariyaAi/cineflow-studio cineflow-mcp
 
 # Or install the toolkit and set up the IDE integration
-pip install cineflow-studio
+pip install git+https://github.com/MilayaMariyaAi/cineflow-studio
 cineflow-setup
 ```
 
 `cineflow-setup` installs the CineFlow skill into your IDE skill folders
 (Cursor, Claude Code, Kimi, Cline, …), writes the MCP config with the
-`uvx cineflow-studio` command, and prints your GPU profile.
+git-`uvx` command (see QUICKSTART_RU.md), and prints your GPU profile.
 
 ### MCP config snippet (manual setup)
 
@@ -66,7 +66,11 @@ cineflow-setup
   "mcpServers": {
     "cineflow": {
       "command": "uvx",
-      "args": ["cineflow-studio"]
+      "args": ["--from", "git+https://github.com/MilayaMariyaAi/cineflow-studio", "cineflow-mcp"],
+      "env": {
+        "CINEFLOW_CLOUD_URL": "https://cineflow.aimari.ru",
+        "CINEFLOW_API_KEY": "cfp_..."
+      }
     }
   }
 }

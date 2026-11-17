@@ -29,6 +29,7 @@ dev = [
 
 [project.scripts]
 cineflow-mcp = "cineflow_studio.mcp.server:main"
+cineflow-mcp-http = "cineflow_studio.mcp.http_transport:main"
 cineflow-setup = "cineflow_studio.setup_entry:main"
 
 [tool.setuptools.packages.find]
