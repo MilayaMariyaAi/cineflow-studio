@@ -16,13 +16,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from cineflow.logging_config import get_logger
-from cineflow_studio.mcp.server import McpServer
+from cineflow_studio.mcp.server import McpServer  # sync rewrites to cineflow_studio for the package
 
-logger = get_logger("cineflow_studio.mcp.http_transport")
+logger = logging.getLogger("cineflow_studio.mcp.http_transport")
 
 
 def serve_http(host: str, port: int) -> None:

@@ -46,6 +46,7 @@ def install_skill(repo_root: Path) -> list[str]:
 def write_mcp_configs(repo_root: Path, command: str = "uvx", args: list[str] | None = None) -> list[str]:
     server_entry = {"cineflow": {"command": command, "args": args or ["cineflow-studio"]}}
     written: list[str] = []
+    preserved: list[str] = []
     for rel in MCP_CONFIG_FILES:
         path = repo_root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -58,10 +59,18 @@ def write_mcp_configs(repo_root: Path, command: str = "uvx", args: list[str] | N
         servers = config.get("mcpServers")
         if not isinstance(servers, dict):
             servers = {}
+        existing = servers.get("cineflow")
+        if isinstance(existing, dict) and "url" in existing:
+            # D4 (#754): a configured HTTP+Bearer setup is the user's working
+            # config — never clobber it back to stdio. Skip and note.
+            preserved.append(rel)
+            continue
         servers.update(server_entry)
         config["mcpServers"] = servers
         path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         written.append(rel)
+    if preserved:
+        print(f"   preserved HTTP config in: {', '.join(preserved)}")
     return written
 
 

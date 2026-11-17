@@ -16,7 +16,7 @@ from cineflow_studio.installer.manifest import (
 
 PROFILE_FLAGS = {
     "rtx_24gb": "--highvram --gpu-only --listen 127.0.0.1 --port 8188",
-    "rtx_16gb": "--fp8_e4m3fn-unet --normalvram --listen 127.0.0.1 --port 8188",
+    "rtx_16gb": "--fp8_e4m3fn-unet --lowvram --listen 127.0.0.1 --port 8188",
     "rtx_12gb": "--lowvram --disable-xformers --listen 127.0.0.1 --port 8188",
     "apple_silicon": "--listen 127.0.0.1 --port 8188",
     "cloud_only": "",

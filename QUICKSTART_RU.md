@@ -73,6 +73,25 @@ IDE. После первого публичного PyPI-релиза этот �
 
 ---
 
+---
+
+## Если инструменты не появились в чате (Cursor)
+
+1. Откройте панель MCP в Cursor (иконка настроек → Tools & MCP) и проверьте
+   статус сервера `cineflow` — он должен быть **Enabled/Connected**. После
+   правки mcp.json Cursor иногда требует включить сервер вручную.
+2. Формат `{"url": ...}` требует свежую версию Cursor (обновите).
+3. URL-конфиг защищён от перезаписи: повторный `cineflow-setup` сохранит ваш
+   HTTP-вариант (в консоли будет «preserved HTTP config»).
+4. Мост жив? Откройте http://127.0.0.1:8765/mcp в браузере — должен ответить
+   JSON с `"transport": "http"`. Если нет — перезапустите
+   `uvx --from git+https://github.com/MilayaMariyaAi/cineflow-studio cineflow-mcp-http`.
+5. Рендер упал с ошибкой весов? `cineflow_installer_audit` покажет, чего не
+   хватает под ваш профиль; community-блюпринты требуют свои веса (например,
+   FLUX.2 Klein 4B для turnaround).
+
+---
+
 ## 3. Что где после установки
 
 - .cursor/skills/cineflow/SKILL.md (и 4 другие IDE) — скилл: протокол работы агента

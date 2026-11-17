@@ -138,8 +138,23 @@ async def queue_comfy_workflow(
     except (httpx.HTTPError, OSError):
         pass  # Graceful fallback in offline / test / local environment
 
+    if is_live:
+        status = "queued"
+        message = (
+            f"Assembled ComfyUI graph ({len(workflow_graph)} nodes) and queued under "
+            f"prompt ID '{prompt_id}'. Saved '{clean_shot}.comfy.json' and '{clean_shot}.cineflow.json'."
+        )
+    else:
+        # D7 (#754): a dead/refusing ComfyUI is NOT a silent success - the
+        # graph is saved, but nothing was queued and the agent must say so.
+        status = "queued_offline"
+        message = (
+            f"Graph ({len(workflow_graph)} nodes) assembled and saved ('{clean_shot}.comfy.json', "
+            f"'{clean_shot}.cineflow.json'), but ComfyUI at {base_comfy} did not accept the prompt "
+            "(offline or rejected). Start ComfyUI, then re-run the queue step."
+        )
     return {
-        "status": "queued",
+        "status": status,
         "prompt_id": prompt_id,
         "is_live_comfy": is_live,
         "project_id": project_id,
@@ -149,10 +164,7 @@ async def queue_comfy_workflow(
         "node_count": len(workflow_graph),
         "workflow_path": str(wf_file),
         "sidecar_path": str(sidecar_file),
-        "message": (
-            f"Successfully assembled ComfyUI graph ({len(workflow_graph)} nodes) and queued "
-            f"under prompt ID '{prompt_id}'. Saved '{clean_shot}.comfy.json' and '{clean_shot}.cineflow.json'."
-        ),
+        "message": message,
     }
 
 

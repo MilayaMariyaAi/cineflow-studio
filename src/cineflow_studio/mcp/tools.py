@@ -385,6 +385,17 @@ async def handle_billing_status(args: dict[str, Any]) -> dict[str, Any]:
         }
         status["subscription"] = me.get("subscription")
         status["payment_url"] = me.get("payment_url")
+        # D6 (#754): storage used/cap passthrough — the agent warns BEFORE the
+        # upload refusal instead of discovering it by a failed call.
+        status["storage"] = me.get("storage") or {"used_gb": None, "cap_gb": None}
+        # D5: the plan slug is the tier the checklist reasons about.
+        subscription = me.get("subscription") or {}
+        if subscription.get("plan"):
+            status["tier"] = subscription["plan"]
+            status["tier_name"] = (
+                "CineFlow plan '" + subscription["plan"] + "' ("
+                + str(subscription.get("status")) + ") verified by the server"
+            )
         status["server"] = {
             "api_rev": me_server.get("api_rev"),
             "api_contract": me_server.get("api_contract"),

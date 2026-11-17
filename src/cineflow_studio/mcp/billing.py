@@ -59,6 +59,7 @@ def resolve_billing_status() -> dict[str, Any]:
         "refusal": None,
         "subscription": None,
         "payment_url": None,
+        "storage": {"used_gb": None, "cap_gb": None},
         "server": {"api_rev": None, "api_contract": None},
         "compat": {
             "package_api_contract": PACKAGE_API_CONTRACT,
