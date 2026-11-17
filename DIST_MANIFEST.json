@@ -1,11 +1,11 @@
 {
   "files": {
     "CHANGELOG.md": "767996f6d196dbeec33e536985a95034ed9b5934f7374856eb6756035de4fa10",
-    "DIST_SOURCE_SHA": "d13b6bc2862233a7c8ebce9eca8891479bc2283b60f77fa69e6a3082e1603a6f",
+    "DIST_SOURCE_SHA": "3df2fe4199f7334be95400631366359ba430f19fc2ab927e386e88c2b77e77f9",
     "LICENSE": "133491b665826e8aea42778be47d5dcfba7d8fd1b304eac4fd0d49bfe7ae5511",
     "MANIFEST.in": "22382da65669880f7b9744bada658da7d49015b4122e5d098fa66263095d6efc",
-    "QUICKSTART_RU.md": "cf6f0135bb10da5668f1b09c2215dd06cebde1ac5994965ac7ba7ef10d02d1b5",
-    "README.md": "24db1164052e3612de6c84b41c17a0bfaea5feea9e2514418355b4820f5e51d0",
+    "QUICKSTART_RU.md": "f3cfa04b0dd1704564b01180ae5143ca4b722c2feced7b4aff4ae46239f8e85a",
+    "README.md": "549ea76183917a0e54aab27dc06b7a9d4d0830943e122e68ec16c1506d983536",
     "VERSION": "3d097c315a1c543040f548da4c7051265e94c77211a2411ced1d4621344270de",
     "pyproject.toml": "29fb86b3812c6cb2a188aa90ff0223f3e2bf6099e29886091d559b6f5beecd38",
     "scripts/verify_dist.py": "0070c5fb905ba75688d997633e2a8d3bc24eddc06321bd729932ceef6598da45",
@@ -42,5 +42,5 @@
     "src/cineflow_studio/skill/cineflow/references/davinci_resolve.md": "4418fe9f02cdf9c05d21044f96b6406baedd02e583b2fffc5d6959a8371f99dc",
     "src/cineflow_studio/skill/cineflow/references/production_invariants.md": "ca71b9e8598f61e9ac8f6b5229ddd8eb7fd172313fb9b820a661447650df50f7"
   },
-  "source_sha": "8b616746"
+  "source_sha": "47ccc85d"
 }

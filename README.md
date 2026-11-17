@@ -1,5 +1,21 @@
 # CineFlow Studio: Universal AI Filmmaker & Video Director
 
+
+## Установка с нуля (агент сделает сам)
+
+Киньте в чистый чат IDE одну строку — агент сделает всё остальное:
+
+```
+Установи CineFlow Studio из https://github.com/MilayaMariyaAi/cineflow-studio
+по инструкции из README — сделай всё сам, спрашивай только токен.
+```
+
+Агент: поставит uv, развернёт MCP-сервер и скилл, пропишет конфиги IDE и
+попросит только персональный токен CineFlow (cineflow.aimari.ru →
+POST /me/tokens → `cfp_…`). Полная пошаговая инструкция — в
+[QUICKSTART_RU.md](QUICKSTART_RU.md).
+
+
 In-IDE AI Filmmaking Studio powered by the Model Context Protocol (MCP),
 ComfyUI, and DaVinci Resolve. Turn screenplays and book stories into
 cinematic AI videos: character turnaround sheets, scene graphs, closed-mouth
