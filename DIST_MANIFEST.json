@@ -1,10 +1,10 @@
 {
   "files": {
     "CHANGELOG.md": "767996f6d196dbeec33e536985a95034ed9b5934f7374856eb6756035de4fa10",
-    "DIST_SOURCE_SHA": "eb4664e1543db6d6ef22674d03cbb4dae3c71006276d23999803daae044b2e2d",
+    "DIST_SOURCE_SHA": "5c1c88557f96b1abd46849cb62259d2f99941e89ec88c378565245a5891ee558",
     "LICENSE": "133491b665826e8aea42778be47d5dcfba7d8fd1b304eac4fd0d49bfe7ae5511",
     "MANIFEST.in": "22382da65669880f7b9744bada658da7d49015b4122e5d098fa66263095d6efc",
-    "QUICKSTART_RU.md": "1d1c84060deb1eba6941dc3aca646c810eadb0458399ff0be58e39361d51015f",
+    "QUICKSTART_RU.md": "ee3ede6e2a26419a9b2dc593745e41968d9974b8ff3298d0eef40c9544bf4afd",
     "README.md": "b73a970af37e5721c0bd73bfff024c8a023a3f99a1feb2e0c25884fefe75f0b3",
     "VERSION": "3d097c315a1c543040f548da4c7051265e94c77211a2411ced1d4621344270de",
     "pyproject.toml": "570d33fb321a581cb0bd09dc093ed7dfd3520984e53be7fd8493c480dbb6d6a8",
@@ -16,9 +16,10 @@
     "src/cineflow_studio/comfy/errors.py": "db7c33bc598811dd0701c464a27715c1c8fbd6310b1d344173a43f0c97c74984",
     "src/cineflow_studio/comfy/prompt_format.py": "38f131e4b338ba509f723b5c9c0ce8e1660cf2eef743ac2479901f654808f428",
     "src/cineflow_studio/installer/__init__.py": "051879a32888f14d5a180503281cad5bdbe1ba5194aafa5ec40c708d0045ad39",
-    "src/cineflow_studio/installer/hardware.py": "7b49d005e9655774cadb97876b81b5c2a853c0f2b8c09c9d68e7e5f76d156fca",
-    "src/cineflow_studio/installer/manifest.py": "f7e77ad0dcb30195a9fd2106b0145b8d503d915bca30e1dd0a6c27ea53632145",
-    "src/cineflow_studio/installer/runner.py": "d9e3c9a7c00b181166295246fab35a392859beb99abbf1e68705f0fa0079761e",
+    "src/cineflow_studio/installer/hardware.py": "4c1ddbd300bbe0b81875a8c389835b931a38888ddcddd56edba64922dffad8f0",
+    "src/cineflow_studio/installer/manifest.py": "989430ab3d1789a14f6723b701d7c2f736bdfbd1dd011f3a09884d76f9270c4f",
+    "src/cineflow_studio/installer/recommend.py": "69d7024dbcbedfb7efb31b3a70a12b62d5fc0e74e5be0a21a7552ea0d65543d7",
+    "src/cineflow_studio/installer/runner.py": "a0c85bb6678b7e72ac9ea8bbe0336e0523292022648652fce9ee113e296ef33c",
     "src/cineflow_studio/mcp/__init__.py": "9c01ab40089f32672f710b809a5e5738f70a47d0c94717d9af39fd25a93def24",
     "src/cineflow_studio/mcp/billing.py": "feda06c13fb3445e14f0f4010466c6d035deb94ea01c8cb05f7f257f7e532937",
     "src/cineflow_studio/mcp/cloud.py": "9dd5c85db73350b1af9fae45d53231da508c2402f3a7beb37956957b1a8e3a80",
@@ -32,16 +33,17 @@
     "src/cineflow_studio/mcp/resources.py": "d9cdb3e1d583b882053f31f05b56badcdae19ba377e2b1ff9da50305f5c2edd6",
     "src/cineflow_studio/mcp/security.py": "36182b6fdc360d7cfc323410443e49a74ac769befec3878c4fe5d2b2fd759728",
     "src/cineflow_studio/mcp/server.py": "6e0d8011ba7e943fcf00cecbaae17ff9d2887a7f7580d3d586e02a056443c42e",
-    "src/cineflow_studio/mcp/tools.py": "4c9801baff5d4e219f645ae706b8e39d091290de58568c3a1a307bde3623268b",
+    "src/cineflow_studio/mcp/tools.py": "b9c0f4b127b3c2773c94754468771fbfc89c6bda14bb5f19c503e15e445a42c9",
     "src/cineflow_studio/mcp/updates.py": "af64d350e6f12ce6d9fe46e73451f2043980f74d81267b05d5810576ee9460a7",
     "src/cineflow_studio/mcp/vision.py": "6c0eb914e9b9a361359a02e41c91115ce2a5dc6e38171341f43263d4bb7d9198",
     "src/cineflow_studio/observations/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "src/cineflow_studio/observations/schemas.py": "1288cd6d1293b95bfc1221292192e7a3033ab7ea9df3fbaca52feb9b3e9f2bb0",
-    "src/cineflow_studio/setup_entry.py": "b9800c857cde393f21a4c815123b08f5398fe0091b925db22dd33898d83868e2",
-    "src/cineflow_studio/skill/cineflow/SKILL.md": "425dab0904c639a738f826440a4ae563c23cb335f0934ae7f4f52fb179a6127d",
+    "src/cineflow_studio/setup_entry.py": "06b5cb92d815544504e170657f03cb8207ecfc29aa3084f5b8dba3b0c15d01ee",
+    "src/cineflow_studio/skill/cineflow/SKILL.md": "afce0c871dc912809112ee6070cb1e17ba0d6bc48748f334b1ef26a71545c41e",
     "src/cineflow_studio/skill/cineflow/references/comfy_blueprints.md": "c11238f985039eb3738f3d0c715f12b94d9dac97cad35dc35427be634500dc1a",
     "src/cineflow_studio/skill/cineflow/references/davinci_resolve.md": "4418fe9f02cdf9c05d21044f96b6406baedd02e583b2fffc5d6959a8371f99dc",
+    "src/cineflow_studio/skill/cineflow/references/hardware_profiles.md": "bb0f5271de5e8420cb3c178025b8794d338cda1b50b0789385ebc7db0b3f3cd0",
     "src/cineflow_studio/skill/cineflow/references/production_invariants.md": "ca71b9e8598f61e9ac8f6b5229ddd8eb7fd172313fb9b820a661447650df50f7"
   },
-  "source_sha": "28048eed"
+  "source_sha": "f7058170"
 }

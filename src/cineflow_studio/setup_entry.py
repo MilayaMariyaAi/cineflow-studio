@@ -93,6 +93,37 @@ def comfy_hint() -> str:
     return "Local ComfyUI renders on your GPU: the model installer and launcher scripts are in the package bin/."
 
 
+def write_bridge_scripts(repo_root: Path) -> list[str]:
+    """One-click bridge launchers next to the mcp.json files (#756): the user
+    double-clicks and the HTTP MCP stays alive; no manual uvx in a console."""
+    uvx_cmd = (
+        'uvx --from git+https://github.com/MilayaMariyaAi/cineflow-studio cineflow-mcp-http'
+    )
+    written: list[str] = []
+    bat = repo_root / "start_mcp_bridge.bat"
+    bat.write_text(
+        "@echo off\r\n"
+        "title CineFlow MCP bridge (keep this window open)\r\n"
+        f"{uvx_cmd}\r\n"
+        "pause\r\n",
+        encoding="utf-8",
+    )
+    written.append(str(bat))
+    sh = repo_root / "start_mcp_bridge.sh"
+    sh.write_text(
+        "#!/usr/bin/env bash\n"
+        "# CineFlow MCP bridge (keep this terminal open)\n"
+        f"{uvx_cmd}\n",
+        encoding="utf-8",
+    )
+    try:
+        sh.chmod(0o755)
+    except OSError:
+        pass
+    written.append(str(sh))
+    return written
+
+
 def main() -> int:
     # Emoji output crashes a cp1252 Windows console (and `python -I` ignores
     # PYTHONIOENCODING) — reconfigure before the first print (#752).
@@ -111,6 +142,11 @@ def main() -> int:
     written = write_mcp_configs(repo_root)
     print("🔌 MCP configs written:")
     for rel in written:
+        print(f"   {rel}")
+
+    bridge = write_bridge_scripts(repo_root)
+    print("🌐 MCP bridge launchers:")
+    for rel in bridge:
         print(f"   {rel}")
 
     print(f"🖥️  {gpu_profile_line()}")

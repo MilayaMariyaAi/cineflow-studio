@@ -121,24 +121,28 @@ def inspect_hardware(target_dir: Path | None = None) -> HardwareProfile:
     gpu_name, vram_gb, is_cuda, is_apple_silicon = detect_gpu_info()
 
     # Determine recommended profile
-    if is_cuda and vram_gb >= 22.0:
-        gpu_str = (gpu_name or "").lower()
-        if "3090" in gpu_str:
-            recommended_profile = "rtx_3090"
-            profile_desc = (
-                f"Studio 24GB Lightweight Profile ({gpu_name}, {vram_gb:.1f} GB VRAM). "
-                "Co-locates ComfyUI LTX-Video 2.5 Light, FLUX Schnell GGUF, and Qwen 3.8/2.5-VL Vision (CV) "
-                "inside ComfyUI using dynamic VRAM offloading to ensure rock-solid stability."
-            )
-            flags = "--normalvram --lowvram --listen 127.0.0.1 --port 8188"
-        else:
-            recommended_profile = "rtx_4090"
-            profile_desc = (
-                f"Studio Flagship 24GB Profile ({gpu_name}, {vram_gb:.1f} GB VRAM). "
-                "Full-scale single-GPU package: LTX-Video 2.5 FP8, FLUX Klein FP8, Qwen 3.8/2.5-VL Vision (CV), "
-                "and Higgs v3 TTS inside ComfyUI with native Ada Lovelace FP8 acceleration."
-            )
-            flags = "--highvram --fast --listen 127.0.0.1 --port 8188"
+    if is_cuda and vram_gb >= 30.0:
+        # Blackwell 32GB class (RTX 5090 etc.): the 4090 bundle plus headroom;
+        # portable Comfy needs the cu128 PyTorch build on this architecture.
+        recommended_profile = "rtx_5090"
+        profile_desc = (
+            f"Studio Blackwell 32GB Profile ({gpu_name}, {vram_gb:.1f} GB VRAM). "
+            "The full flagship bundle plus headroom for the 9B tier; ComfyUI portable "
+            "must run the cu128 PyTorch build (Blackwell needs it)."
+        )
+        flags = "--highvram --fast --listen 127.0.0.1 --port 8188"
+    elif is_cuda and vram_gb >= 22.0:
+        # 24GB class unified (#763/#765): a 3090 is the same 24GB card as the
+        # 4090 — it gets the flagship bundle (Ampere runs FP8 weights via
+        # Comfy's scaled-weights support, just slower than Ada-native).
+        recommended_profile = "rtx_4090" if "4090" in (gpu_name or "").lower() else "rtx_3090"
+        profile_desc = (
+            f"Studio Flagship 24GB Profile ({gpu_name}, {vram_gb:.1f} GB VRAM). "
+            "Full-scale single-GPU package: LTX-Video 2.5 FP8, FLUX Klein, Qwen-Image-Edit, "
+            "MiniMax H3, Qwen 3.8/2.5-VL Vision (CV), and Higgs v3 TTS inside ComfyUI. "
+            "On Ampere (3090) FP8 weights run via scaled-weights support."
+        )
+        flags = "--highvram --fast --listen 127.0.0.1 --port 8188"
     elif is_cuda and vram_gb >= 14.0:
         recommended_profile = "rtx_16gb"
         profile_desc = (

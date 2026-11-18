@@ -59,7 +59,11 @@ MODELS_CATALOG: list[ModelWeight] = [
         hf_filename="ltx-video-2b-v0.9.5.safetensors",
         local_relative_path="models/checkpoints/ltx-video-2b-v0.9.5.safetensors",
         size_gb=5.8,
-        required_profiles=["rtx_4090", "rtx_24gb", "rtx_16gb", "rtx_12gb"],
+<<<<<<< HEAD
+        required_profiles=["rtx_4090", "rtx_5090", "rtx_24gb", "rtx_3090", "rtx_16gb", "rtx_12gb"],
+=======
+        required_profiles=["rtx_4090", "rtx_24gb", "rtx_3090", "rtx_16gb", "rtx_12gb"],
+>>>>>>> b60fec0c0a252aa47937ee8ba510cb7b695760cc
         description="High-speed camera motion and photo-animate video engine (25 fps, 1080p).",
     ),
     ModelWeight(
@@ -79,7 +83,11 @@ MODELS_CATALOG: list[ModelWeight] = [
         hf_filename="split_files/diffusion_models/flux-2-klein-4b.safetensors",
         local_relative_path="models/unet/flux-2-klein-4b.safetensors",
         size_gb=7.8,
-        required_profiles=["rtx_4090", "rtx_24gb", "rtx_16gb"],
+<<<<<<< HEAD
+        required_profiles=["rtx_4090", "rtx_5090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
+=======
+        required_profiles=["rtx_4090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
+>>>>>>> b60fec0c0a252aa47937ee8ba510cb7b695760cc
         description="Core first-frame character turnaround and location panorama synthesizer (FLUX.2 Klein 4B, ComfyUI split package).",
     ),
     ModelWeight(
@@ -87,9 +95,13 @@ MODELS_CATALOG: list[ModelWeight] = [
         category="clip",
         hf_repo="Comfy-Org/Flux-2-Klein-4B",
         hf_filename="split_files/text_encoders/qwen_3_4b.safetensors",
-        local_relative_path="models/clip/qwen_3_4b.safetensors",
+        local_relative_path="models/text_encoders/qwen_3_4b.safetensors",
         size_gb=8.0,
-        required_profiles=["rtx_4090", "rtx_24gb", "rtx_16gb"],
+<<<<<<< HEAD
+        required_profiles=["rtx_4090", "rtx_5090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
+=======
+        required_profiles=["rtx_4090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
+>>>>>>> b60fec0c0a252aa47937ee8ba510cb7b695760cc
         description="Qwen3-4B text conditioning for FLUX.2 Klein (replaces T5xxl for FLUX.2 models).",
     ),
     ModelWeight(
@@ -99,7 +111,11 @@ MODELS_CATALOG: list[ModelWeight] = [
         hf_filename="split_files/vae/flux2-vae.safetensors",
         local_relative_path="models/vae/flux2-vae.safetensors",
         size_gb=0.3,
-        required_profiles=["rtx_4090", "rtx_24gb", "rtx_16gb"],
+<<<<<<< HEAD
+        required_profiles=["rtx_4090", "rtx_5090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
+=======
+        required_profiles=["rtx_4090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
+>>>>>>> b60fec0c0a252aa47937ee8ba510cb7b695760cc
         description="FLUX.2 VAE decoder for Klein image pipelines.",
     ),
     ModelWeight(
@@ -119,7 +135,11 @@ MODELS_CATALOG: list[ModelWeight] = [
         hf_filename="split_files/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors",
         local_relative_path="models/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors",
         size_gb=19.4,
-        required_profiles=["rtx_4090", "rtx_24gb"],
+<<<<<<< HEAD
+        required_profiles=["rtx_4090", "rtx_5090", "rtx_24gb", "rtx_3090"],
+=======
+        required_profiles=["rtx_4090", "rtx_24gb", "rtx_3090"],
+>>>>>>> b60fec0c0a252aa47937ee8ba510cb7b695760cc
         description="Last-frame continuity and visual editing model for shot-to-shot transitions.",
     ),
     ModelWeight(
@@ -129,7 +149,7 @@ MODELS_CATALOG: list[ModelWeight] = [
         hf_filename="Qwen3VL-4B-Instruct-Q4_K_M.gguf",
         local_relative_path="models/unet/Qwen3VL-4B-Instruct-Q4_K_M.gguf",
         size_gb=2.5,
-        required_profiles=["rtx_4090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
+        required_profiles=["rtx_4090", "rtx_5090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
         description="Vision model for frame inspection, defect detection, and lip-sync closed-mouth validation.",
     ),
     ModelWeight(
@@ -139,7 +159,7 @@ MODELS_CATALOG: list[ModelWeight] = [
         hf_filename="t5xxl_fp8_e4m3fn.safetensors",
         local_relative_path="models/clip/t5xxl_fp8_e4m3fn.safetensors",
         size_gb=4.8,
-        required_profiles=["rtx_4090", "rtx_3090", "rtx_24gb", "rtx_16gb", "rtx_12gb"],
+        required_profiles=["rtx_4090", "rtx_5090", "rtx_3090", "rtx_24gb", "rtx_16gb", "rtx_12gb"],
         description="High-capacity text conditioning encoder for LTX-Video cinematic prompt comprehension.",
     ),
     ModelWeight(
@@ -149,7 +169,7 @@ MODELS_CATALOG: list[ModelWeight] = [
         hf_filename="model.safetensors",
         local_relative_path="models/tts/higgs_tts_3_4b.safetensors",
         size_gb=9.3,
-        required_profiles=["rtx_4090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
+        required_profiles=["rtx_4090", "rtx_5090", "rtx_24gb", "rtx_3090", "rtx_16gb"],
         description="Voice synthesis with emotional control and reference voice cloning (Higgs TTS v3, 4B).",
     ),
     ModelWeight(
@@ -159,7 +179,11 @@ MODELS_CATALOG: list[ModelWeight] = [
         hf_filename="diffusion_models/minimax_h3_ref2va_pruned_fp8_scaled.safetensors",
         local_relative_path="models/diffusion_models/minimax_h3_ref2va_pruned_fp8_scaled.safetensors",
         size_gb=19.5,
-        required_profiles=["rtx_4090", "rtx_24gb"],
+<<<<<<< HEAD
+        required_profiles=["rtx_4090", "rtx_5090", "rtx_24gb", "rtx_3090"],
+=======
+        required_profiles=["rtx_4090", "rtx_24gb", "rtx_3090"],
+>>>>>>> b60fec0c0a252aa47937ee8ba510cb7b695760cc
         description="Reference-to-video scene engine: shot frames from the project's reference images (MiniMax H3, ComfyUI package).",
     ),
 ]

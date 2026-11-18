@@ -644,7 +644,13 @@ async def handle_assets_transfer(args: dict[str, Any]) -> dict[str, Any]:
 async def handle_hardware_profile(args: dict[str, Any]) -> dict[str, Any]:
     from cineflow_studio.installer.hardware import inspect_hardware
     hw = inspect_hardware()
-    return hw.to_dict()
+    body = hw.to_dict()
+    # Hybrid #765: the agent gets the whole onboarding plan for the detected
+    # profile — verified bundle, notes and web-research queries.
+    from cineflow_studio.installer.recommend import recommend_bundle
+
+    body["recommendation"] = recommend_bundle(body["recommended_profile"], body.get("gpu_name"))
+    return body
 
 
 async def handle_installer_audit(args: dict[str, Any]) -> dict[str, Any]:

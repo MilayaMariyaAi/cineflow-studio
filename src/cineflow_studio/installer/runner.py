@@ -15,6 +15,7 @@ from cineflow_studio.installer.manifest import (
 )
 
 PROFILE_FLAGS = {
+    "rtx_5090": "--highvram --fast --listen 127.0.0.1 --port 8188",
     "rtx_24gb": "--highvram --gpu-only --listen 127.0.0.1 --port 8188",
     "rtx_16gb": "--fp8_e4m3fn-unet --lowvram --listen 127.0.0.1 --port 8188",
     "rtx_12gb": "--lowvram --disable-xformers --listen 127.0.0.1 --port 8188",

@@ -204,7 +204,7 @@ never share one between users or hardcode it into a repository.
 - `cineflow_auth` 🔧: Saves the personal API token (`cfp_…`, minted on the CineFlow portal with a logged-in session). Verification happens **server-side on every cloud call**; the client only stores the string.
 
 ### G. Hardware Profiling, Model Provisioning & Workflow Blueprints
-- `cineflow_hardware_profile`: Inspects local CPU, RAM, GPU, VRAM and determines the optimal memory profile (`rtx_24gb`, `rtx_16gb`, `rtx_12gb`, `apple_silicon`, `cloud_only`).
+- `cineflow_hardware_profile`: Inspects local CPU, RAM, GPU, VRAM and determines the optimal memory profile — now WITH the `recommendation` block: the verified bundle for this GPU (weights, sources, install paths, total GB), per-profile notes and **web-research queries**. Onboarding protocol (search → validate → propose → install): [references/hardware_profiles.md](references/hardware_profiles.md).
 - `cineflow_installer_audit`: Checks which models are downloaded from HuggingFace and calculates readiness percentage.
 - `cineflow_generate_launcher`: Generates supervised launch script (`run_comfy_cineflow.sh` / `.bat`) with hardware memory flags.
 - `cineflow_cache_cleanup`: Cleans up temporary latents in `output/latents/` and preview cache (#608) to free SSD disk space.
